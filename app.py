@@ -1,3 +1,7 @@
+import hashlib
+import hmac
+import base64
+import requests
 from flask import Flask, request, abort
 
 app = Flask(__name__)
@@ -15,7 +19,13 @@ def handle_webhook(body, signature):
     # ตรวจสอบความถูกต้องของ signature และ body
     # โดยใช้ Channel Secret ของคุณ
     # ถ้าไม่ถูกต้องให้ raise Exception("Invalid signature")
+    channel_secret = "97f2925506d4cd50c9645bfc04fe9428"  # แทนที่ด้วย Channel Secret ของคุณ
+    hash = hmac.new(channel_secret.encode('utf-8'), body.encode('utf-8'), hashlib.sha256).digest()
+    generated_signature = base64.b64encode(hash).decode('utf-8')
     
+    if signature != generated_signature:
+        abort(400)
+
     # ดึงข้อมูลจาก webhook
     events = request.json["events"]
     for event in events:
@@ -37,11 +47,11 @@ def handle_message_event(event):
 def send_message(reply_token, message_text):
     # ส่งข้อความกลับไปยังผู้ใช้โดยใช้ Line Messaging API
     # โดยใช้ Channel Access Token ของคุณ
-    # ตัวอย่างนี้ใช้สำหรับข้อความปกติ สามารถปรับปรุงเพื่อใช้กับประเภทข้อความอื่นๆ ได้
+    channel_access_token = "9mfCCWlnBGRerI71QYVkPimqooylc5T0MolaRYLbKJZZxuopqsp7BWH4YzDGgDkBGjISZnjhdZhcbRYDV77mmnZvpxkX/mZ7dn66V5+JQJF9EGA455n5gQyZBhuhs9DK3in8bmE+gszGubEJu5F+BwdB04t89/1O/w1cDnyilFU="  # แทนที่ด้วย Channel Access Token ของคุณ
     reply_url = "https://api.line.me/v2/bot/message/reply"
     headers = {
         "Content-Type": "application/json",
-        "Authorization": "9mfCCWlnBGRerI71QYVkPimqooylc5T0MolaRYLbKJZZxuopqsp7BWH4YzDGgDkBGjISZnjhdZhcbRYDV77mmnZvpxkX/mZ7dn66V5+JQJF9EGA455n5gQyZBhuhs9DK3in8bmE+gszGubEJu5F+BwdB04t89/1O/w1cDnyilFU="
+        "Authorization": "Bearer " + channel_access_token
     }
     data = {
         "replyToken": reply_token,
